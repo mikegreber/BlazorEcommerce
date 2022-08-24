@@ -1,7 +1,7 @@
 ﻿
 
 
-@if (ProductService.Products == null || ProductService.Products.Count == 0)
+@if (ProductService.Products.Count == 0)
 {
     <span>Loading Products...</span>
 }
@@ -22,7 +22,7 @@ else
                     </a>
                     <p>@product.Description</p>
                     <h5 class="price">
-                        $@product.Price
+                        @GetPriceText(product)
                     </h5>
                 </div>
             </li>
