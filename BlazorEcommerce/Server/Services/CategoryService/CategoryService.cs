@@ -13,10 +13,5 @@
             var categories = await _context.Categories.ToListAsync();
             return new ServiceResponse<List<Category>> { Data = categories };
         }
-
-        public async Task<ServiceResponse<Category>> GetCategoryAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
