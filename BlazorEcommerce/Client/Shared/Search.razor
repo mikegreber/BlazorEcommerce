@@ -31,7 +31,8 @@
 
     public void SearchProducts()
     {
-        NavigationManager.NavigateTo($"search/{_searchText}");
+        if (_searchText.Length != 0)
+            NavigationManager.NavigateTo($"search/{_searchText}/1");
     }
 
     public async Task HandleSearch(KeyboardEventArgs? args)

@@ -44,17 +44,26 @@
             return new ServiceResponse<List<Product>>
             {
                 Data = await _context.Products
-                    .Where(p => string.Equals(p.Category.Url, categoryUrl, StringComparison.CurrentCultureIgnoreCase))
+                    .Where(p => p.Category.Url.ToLower().Equals(categoryUrl.ToLower()))
                     .Include(p => p.Variants)
                     .ToListAsync()
             };
         }
 
-        public async Task<ServiceResponse<List<Product>>> SearchProducts(string searchText)
+        public async Task<ServiceResponse<ProductSearchResult>> SearchProducts(string searchText, int page)
         {
-            var response = new ServiceResponse<List<Product>>
+            var pageResults = 2;
+            var pageCount = (int) Math.Ceiling((await FindProductsBySearchText(searchText)).Count / (float) pageResults);
+            var products = await _context.Products
+                .Where(p => p.Title.ToLower().Contains(searchText.ToLower()) || p.Description.ToLower().Contains(searchText.ToLower()))
+                .Include(p => p.Variants)
+                .Skip((page - 1) * pageResults)
+                .Take(pageResults)
+                .ToListAsync();
+
+            var response = new ServiceResponse<ProductSearchResult>
             {
-                Data = await FindProductsBySearchText(searchText)
+                Data = new ProductSearchResult { Products = products, CurrentPage = page, Pages = pageCount }
             };
 
             return response;
@@ -95,6 +104,17 @@
             }
 
             return new ServiceResponse<List<string>> { Data = result };
+        }
+
+        public async Task<ServiceResponse<List<Product>>> GetFeaturedProductsAsync()
+        {
+            return new ServiceResponse<List<Product>>
+            {
+                Data = await _context.Products
+                    .Where(p => p.Featured)
+                    .Include(p=>p.Variants)
+                    .ToListAsync()
+            };
         }
     }
 }

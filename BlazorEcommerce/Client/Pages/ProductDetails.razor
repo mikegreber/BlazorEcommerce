@@ -1,5 +1,6 @@
 ﻿@page "/product/{id:int}"
 @inject IProductService ProductService
+@inject ICartService CartService;
 
 @if (_product == null)
 {
@@ -18,7 +19,7 @@ else
             @if (_product.Variants.Count > 1)
             {
                 <div class="mb-3">
-                    <select class="form-select" @bind="currentTypeId">
+                    <select class="form-select" @bind="_currentTypeId">
                         @foreach (var variant in _product.Variants)
                         {
                             <option value="@variant.ProductTypeId">@variant.ProductType.Name</option>
@@ -27,18 +28,22 @@ else
                 </div>
             }
 
-            @{
-                var selectedVariant = GetSelectedVariant();
-                @if (selectedVariant != null)
-                {
-                    @if (selectedVariant.OriginalPrice > selectedVariant.Price)
-                    {
-                        <h6 class="text-muted original-price">$@selectedVariant.OriginalPrice</h6>
-                    }
+            @{ var selectedVariant = GetSelectedVariant();}
 
-                    <h4 class="price">$@selectedVariant.Price</h4>
+            @if (selectedVariant != null)
+            {
+                @if (selectedVariant.OriginalPrice > selectedVariant.Price)
+                {
+                    <h6 class="text-muted original-price">$@selectedVariant.OriginalPrice</h6>
                 }
+
+                <h4 class="price">$@selectedVariant.Price</h4>
             }
+            
+            <button class="btn btn-primary" @onclick="AddToCart">
+                        <i class="oi oi-cart"></i>&nbsp;&nbsp;&nbsp;Add to Cart
+            </button>
+            
         </div>
     </div>
 }
@@ -47,7 +52,7 @@ else
 @code {
     private Product? _product;
     private string _message = string.Empty;
-    private int currentTypeId = 1;
+    private int _currentTypeId = 1;
 
 
     [Parameter]
@@ -64,16 +69,31 @@ else
         else
         {
             _product = result.Data;
-            if (_product.Variants.Count > 0)
+            if (_product?.Variants.Count > 0)
             {
-                currentTypeId = _product.Variants[0].ProductTypeId;
+                _currentTypeId = _product.Variants[0].ProductTypeId;
             }
         }
     }
 
     private ProductVariant? GetSelectedVariant()
     {
-        var variant = _product.Variants.FirstOrDefault(v => v.ProductTypeId == currentTypeId);
+        var variant = _product?.Variants.FirstOrDefault(v => v.ProductTypeId == _currentTypeId);
         return variant;
+    }
+
+    private async Task AddToCart()
+    {
+        var productVariant = GetSelectedVariant();
+        if (productVariant != null)
+        {
+            var cartItem = new CartItem
+            {
+                ProductId = productVariant.ProductId,
+                ProductTypeId = productVariant.ProductTypeId
+            };
+
+            await CartService.AddToCart(cartItem);
+        }
     }
 }
