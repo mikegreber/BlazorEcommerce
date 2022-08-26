@@ -9,11 +9,7 @@
 
 @code {
 
-    private int GetCartItemsCount()
-    {
-        var cart = LocalStorage.GetItem<List<CartItem>>("cart");
-        return cart?.Count ?? 0;
-    }
+    private int GetCartItemsCount() => LocalStorage.GetItem<int>("cartItemsCount");
 
     protected override void OnInitialized() => CartService.OnChange += StateHasChanged;
 

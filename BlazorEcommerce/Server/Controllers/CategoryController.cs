@@ -1,23 +1,22 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace BlazorEcommerce.Server.Controllers
+namespace BlazorEcommerce.Server.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class CategoryController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class CategoryController : ControllerBase
+    private readonly ICategoryService _categoryService;
+
+    public CategoryController(ICategoryService categoryService)
     {
-        private readonly ICategoryService _categoryService;
+        _categoryService = categoryService;
+    }
 
-        public CategoryController(ICategoryService categoryService)
-        {
-            _categoryService = categoryService;
-        }
-
-        [HttpGet]
-        public async Task<ActionResult<List<Category>>> GetCategories()
-        {
-            var result = await _categoryService.GetCategoriesAsync();
-            return Ok(result);
-        }
+    [HttpGet]
+    public async Task<ActionResult<List<Category>>> GetCategories()
+    {
+        var result = await _categoryService.GetCategoriesAsync();
+        return Ok(result);
     }
 }
