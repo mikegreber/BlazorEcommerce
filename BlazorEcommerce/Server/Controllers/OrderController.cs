@@ -27,11 +27,4 @@ public class OrderController : ControllerBase
         var result = await _orderService.GetOrderDetails(orderId);
         return Ok(result);
     }
-
-    [HttpPost]
-    public async Task<ActionResult<ServiceResponse<bool>>> PlaceOrder()
-    {
-        var result = await _orderService.PlaceOrder();
-        return Ok(result);
-    }
 }

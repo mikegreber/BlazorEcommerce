@@ -17,17 +17,17 @@ public class OrderService : IOrderService
     }
 
     
-    public async Task<ServiceResponse<bool>> PlaceOrder()
+    public async Task<ServiceResponse<bool>> PlaceOrder(int userId)
     {
         var order = new Order()
         {
-            UserId = _authService.GetUserId(),
+            UserId = userId,
             OrderDate = DateTime.Now,
             TotalPrice = 0,
             OrderItems = new List<OrderItem>(),
         };
 
-        var products = (await _cartService.GetDbCartProducts()).Data;
+        var products = (await _cartService.GetDbCartProducts(userId)).Data;
 
         foreach (var product in products)
         {

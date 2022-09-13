@@ -1,0 +1,242 @@
+﻿@page "/admin/product"
+@page "/admin/product/{Id:int}"
+
+@inject IProductService ProductService
+@inject IProductTypeService ProductTypeService
+@inject ICategoryService CategoryService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JsRuntime
+
+@if (_loading)
+{
+    <span>@_msg</span>
+}
+else
+{
+    @if (_product.Editing)
+    {
+        <h3>Edit "@_product.Title"</h3>
+    } else if (_product.IsNew)
+    {
+        <h3>Create a new Product</h3>
+    }
+    
+    <EditForm Model="_product" OnValidSubmit="AddOrUpdateProduct">
+        <DataAnnotationsValidator/>
+        <div class="mb-0">
+            <label for="title">Title</label>
+            <InputText id="title" @bind-Value="_product.Title" class="form-control"/>
+        </div>
+        <div class="mb-0">
+            <label for="imageUrl">Image Url</label>
+            <InputText id="imageUrl" @bind-Value="_product.ImageUrl" class="form-control"/>
+        </div>
+        <div class="mb-0" style="display: flex; flex-wrap: wrap; flex-direction: row; justify-content: center;">
+            @if (!string.IsNullOrEmpty(_product.ImageUrl))
+            {
+                <img src="@_product.ImageUrl"/>
+            }
+            else
+            {
+                foreach (var image in _product.Images)
+                {
+                    @*<img src="@image.Data"/>
+                    <button type="button" @onclick="()=>RemoveImage(image.Id)">Remove</button>*@
+                    <MudCard Class="ma-1">
+                        <MudCardContent>
+                            <MudImage Src="@image.Data"/>
+                            <MudCardActions Style="justify-content: center;">
+                                <MudButton
+                                    Variant="Variant.Filled"
+                                    Color="Color.Error"
+                                    OnClick="@(() => RemoveImage(image.Id))">
+                                    Remove
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCardContent>
+                    </MudCard>
+                }
+            }
+        </div>
+        <div class="mb-0">
+            <label for="images">Image(s)</label>
+            <InputFile id="images" OnChange="OnFileChange" multiple class="form-control"/>
+        </div>
+        <div class="mb-0">
+            <label for="description">Description</label>
+            <InputText id="description" @bind-Value="_product.Description" class="form-control"/>
+        </div>
+        <hr/>
+        <div class="header">
+            <div class="col">Product Type / Variant</div>
+            <div class="col">Price</div>
+            <div class="col">Original Price</div>
+            <div class="col">Visible</div>
+            <div class="col"></div>
+        </div>
+        @foreach (var variant in _product.Variants)
+        {
+            <div class="row">
+                <div class="col">
+                    <InputSelect disabled="@variant.Deleted" @bind-Value="variant.ProductTypeId" class="form-control">
+                        @foreach (var productType in ProductTypeService.ProductTypes)
+                        {
+                            <option value="@productType.Id.ToString()">@productType.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col">
+                    <InputNumber @bind-Value="variant.Price" class="form-control" disabled="@variant.Deleted"/>
+                </div>
+                <div class="col">
+                    <InputNumber @bind-Value="variant.OriginalPrice" class="form-control" disabled="@variant.Deleted"/>
+                </div>
+                <div class="col col-visible">
+                    <InputCheckbox @bind-Value="variant.Visible" style="transform: scale(1.5);" disabled="@variant.Deleted"/>
+                </div>
+                <div class="col">
+                    <button type="button" class="btn btn-primary" disabled="@variant.Deleted" @onclick="@(() => RemoveVariant(variant.ProductTypeId))"><i class="oi oi-trash"></i></button>
+                </div>
+            </div>
+        }
+        <button type="button" class="btn btn-primary" @onclick="AddVariant"><i class="oi oi-plus"></i> Add Variant</button>
+        <hr/>
+        
+        <div class="mb-0">
+            <label for="category">Category</label>
+            <InputSelect id="category" @bind-Value="_product.CategoryId" class="form-control">
+                @foreach (var category in CategoryService.AdminCategories)
+                {
+                    <option value="@category.Id">@category.Name</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="form-check">
+            <InputCheckbox id="featured" @bind-Value="_product.Featured" class="form-check-input"></InputCheckbox>
+            <label for="featured" class="form-check-label">Featured</label>
+        </div>
+        <div class="form-check">
+            <InputCheckbox id="visible" @bind-Value="_product.Visible" class="form-check-input"></InputCheckbox>
+            <label for="visible" class="form-check-label">Visible</label>
+        </div>
+        <hr/>
+        <button type="submit" class="btn btn-primary float-end">@_btnText</button>
+        <ValidationSummary/>
+    </EditForm>
+
+    @if (!_product.IsNew)
+    {
+        <button type="button" class="btn btn-danger float-start" @onclick="DeleteProduct">Delete Product</button>
+    }
+
+}
+
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    Product _product = new();
+    bool _loading = true;
+    string _btnText = "";
+    string _msg = "Loading...";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProductTypeService.GetProductTypes();
+        await CategoryService.GetAdminCategories();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id == 0)
+        {
+            _product = new Product { IsNew = true };
+            _btnText = "Create Product";
+        }
+        else
+        {
+            var dbProduct = (await ProductService.GetProduct(Id)).Data;
+            if (dbProduct == null)
+            {
+                _msg = $"Product with Id '{Id}' does not exist!";
+                return;
+            }
+
+            _product = dbProduct;
+            _product.Editing = true;
+            _btnText = "Update Product";
+        }
+        _loading = false;
+    }
+
+    void RemoveVariant(int productTypeId)
+    {
+        var variant = _product!.Variants.Find(v => v.ProductTypeId == productTypeId);
+        if (variant == null)
+            return;
+
+        if (variant.IsNew)
+        {
+            _product.Variants.Remove(variant);
+        }
+        else
+        {
+            variant.Deleted = true;
+        }
+    }
+
+    void AddVariant()
+    {
+        _product.Variants.Add(new ProductVariant { IsNew = true, ProductId = _product.Id });
+    }
+
+    async void AddOrUpdateProduct()
+    {
+        if (_product.IsNew)
+        {
+            var result = await ProductService.CreateProduct(_product);
+            if (result != null) 
+                NavigationManager.NavigateTo($"admin/product/{result.Id}");
+        }
+        else
+        {
+            _product.IsNew = false;
+            var updatedProduct = await ProductService.UpdateProduct(_product);
+            if (updatedProduct != null)
+                NavigationManager.NavigateTo($"admin/product/{updatedProduct.Id}", true);
+        }
+    }
+
+    async void DeleteProduct()
+    {
+        if (await JsRuntime.InvokeAsync<bool>("confirm", $"Do you really want to delete '{_product.Title}'?"))
+        {
+            await ProductService.DeleteProduct(_product);
+            NavigationManager.NavigateTo("admin/products");
+        }
+    }
+
+    async Task OnFileChange(InputFileChangeEventArgs e)
+    {
+        var format = "image/png";
+        foreach (var image in e.GetMultipleFiles(int.MaxValue))
+        {
+            var resizedImage = await image.RequestImageFileAsync(format, 200, 200);
+            var buffer = new byte[resizedImage.Size];
+            await resizedImage.OpenReadStream().ReadAsync(buffer);
+            var imageData = $"data:{format};base64,{Convert.ToBase64String(buffer)}";
+            _product.Images.Add(new Image { Data = imageData });
+        }
+    }
+
+    void RemoveImage(int id)
+    {
+        var image = _product.Images.FirstOrDefault(i => i.Id == id);
+        if (image != null)
+        {
+            _product.Images.Remove(image);
+        }
+    }
+
+}

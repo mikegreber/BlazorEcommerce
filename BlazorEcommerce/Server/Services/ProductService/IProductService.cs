@@ -8,5 +8,9 @@
         Task<ServiceResponse<ProductSearchResult>> SearchProducts(string searchText, int page);
         Task<ServiceResponse<List<string>>> GetProductSearchSuggestions(string searchText);
         Task<ServiceResponse<List<Product>>> GetFeaturedProductsAsync();
+        Task<ServiceResponse<List<Product>>> GetAdminProductsAsync();
+        Task<ServiceResponse<Product>> CreateProduct(Product product);
+        Task<ServiceResponse<Product>> UpdateProduct(Product product);
+        Task<ServiceResponse<bool>> DeleteProduct(int id);
     }
 }
